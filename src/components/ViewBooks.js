@@ -17,6 +17,9 @@ import EditIcon from '@mui/icons-material/Edit';
 import { grey } from '@mui/material/colors';
 import '../App.css';
 import AddIcon from '@mui/icons-material/Add';
+import NavBar from './NavBar';
+import Box from '@mui/material/Box';
+import Snackbar from '@mui/material/Snackbar';
 
 
 const StyledTableCell = styled(TableCell)(({ theme }) => ({
@@ -34,6 +37,12 @@ const StyledTableCell = styled(TableCell)(({ theme }) => ({
 function ViewBooks() {
 
   const navigate = useNavigate();
+  
+  useEffect(() => {
+      if (localStorage.getItem('user') == null){
+          navigate("/bookmanager/auth/authenticate")
+      }
+  },[navigate])
 
   let params = useParams();
 
@@ -41,6 +50,8 @@ function ViewBooks() {
   
   const [books, setBooks] = useState();
   const [author, setAuthor] = useState([]);
+  const [open, setOpen] = useState(false);
+  const [snackMessage, setSnackMessage] = useState("");
   
   
   useEffect(() => {
@@ -48,13 +59,14 @@ function ViewBooks() {
     const getBooks = async () =>{
     
       try{
-        const response = await api.get("authors/"+params.id+"/books");
-        console.log(response.data)
+        const response = await api.get("/bookmanager/authors/"+params.id+"/books", { headers: {Authorization : 'Bearer ' + JSON.parse(localStorage.getItem('user')).token}});
         setBooks(response.data);
 
       } 
       catch(err){
         console.log(err);
+        setSnackMessage(err.message)
+        setOpen(true);
       }
     } 
     getBooks();
@@ -66,13 +78,15 @@ function ViewBooks() {
     const getAuthorById = async () =>{
     
       try{
-          const response = await api.get("/author/"+params.id);
+          const response = await api.get("/bookmanager/author/"+params.id, { headers: {Authorization : 'Bearer ' + JSON.parse(localStorage.getItem('user')).token}});
           console.log(response.data)
           setAuthor(response.data);
   
       } 
       catch(err){
           console.log(err);
+          setSnackMessage(err.message)
+          setOpen(true);
       }
     }
     getAuthorById();
@@ -81,23 +95,28 @@ function ViewBooks() {
   function deleteBook(id){
     
     try{
-        api.delete("/book/delete/"+id);
+        api.delete("/bookmanager/book/delete/"+id, { headers: {Authorization : 'Bearer ' + JSON.parse(localStorage.getItem('user')).token}});
     } 
     catch(err){
         console.log(err);
+        setSnackMessage(err.message)
+        setOpen(true);
     }
     let updatedBooks = [...books].filter(i => i.id !== id);
     setBooks(updatedBooks);
   }
 
   function goToEdit(id, title, isbn, publisher, publishedYear){
-    console.log(isbn)
-    navigate("/book/update/"+id + "/" + title + "/" + isbn + "/" + publisher + "/" + publishedYear + "/" + params.id);
+    navigate("/bookmanager/book/update/"+id + "/" + title + "/" + isbn + "/" + publisher + "/" + publishedYear + "/" + params.id);
+  }
+
+  const handleClose = () => {
+    setOpen(false);
   }
 
   return (
-      <div>
-        <h1> {author.firstName + " " + author.lastName + "'s"} Books </h1>
+      <React.Fragment>
+        <div><NavBar title={ author.firstName + " " + author.lastName + "'s Books"} button = 'LOGOUT'/></div>
         <TableContainer component={Paper}>
             <Table sx={{ minWidth: 650 }} aria-label="simple table">
                 <TableHead>
@@ -132,9 +151,18 @@ function ViewBooks() {
             </Table>
         </TableContainer>
         <div id = "btnDiv">
-            <Button variant="contained" startIcon={<AddIcon/>}onClick={() => navigate("/author/"+ params.id + "/book/create")}>ADD BOOK</Button>
+            <Button variant="contained" startIcon={<AddIcon/>}onClick={() => navigate("/bookmanager/author/"+ params.id + "/book/create")}>ADD BOOK</Button>
         </div>
-      </div>
+        <Box sx={{ width: 500 }}>
+          <Snackbar  
+              open={open}
+              onClose={handleClose}
+              anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+              autoHideDuration={6000}
+              message={snackMessage}
+          />
+        </Box>
+      </React.Fragment>
     );
   }
   

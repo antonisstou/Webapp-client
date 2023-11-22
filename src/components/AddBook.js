@@ -7,6 +7,10 @@ import { useNavigate } from 'react-router-dom';
 import api from '../api/axiosConf';
 import Alert from '@mui/material/Alert';
 import {useParams} from 'react-router-dom';
+import NavBar from './NavBar';
+import '../App.css';
+import Box from '@mui/material/Box';
+import Snackbar from '@mui/material/Snackbar';
 
 
 function AddBook() {
@@ -17,6 +21,9 @@ function AddBook() {
     const [isbn, setIsbn] = useState("");
     const [publisher, setPublisher] = useState("");
     const [publishedYear, setPublisherYear] = useState("");
+
+    const [open, setOpen] = useState(false);
+    const [snackMessage, setSnackMessage] = useState("");
     
     const [titleError, setTitleError] = useState(false);
     const [isbnError, setIsbnError] = useState(false);
@@ -50,12 +57,15 @@ function AddBook() {
         if (title && isbn && publisher && publishedYear) {
             
             try{
-                api.post("/author/"+ params.authorId + "/book/create",{isbn:isbn, title:title, publisher:publisher, publishedYear:publishedYear, author:{id:params.authorId}} );
+                api.post("/bookmanager/author/"+ params.authorId + "/book/create",{isbn:isbn, title:title, publisher:publisher, publishedYear:publishedYear, author:{id:params.authorId}},
+                { headers: {Authorization : 'Bearer ' + JSON.parse(localStorage.getItem('user')).token}} );
 
             }
             catch(err)
             {
                 console.error(err);
+                setSnackMessage(err.message)
+                setOpen(true);
             }
             setTitle("");
             setIsbn("");
@@ -67,16 +77,25 @@ function AddBook() {
     }
 
     const navigate = useNavigate();
+    useEffect(() => {
+        if (localStorage.getItem('user') == null){
+            navigate("/bookmanager/auth/authenticate")
+        }
+    },[navigate])
 
     useEffect(() => {
             setTimeout(() => {
             setAlert(false)
-    }, 6000)})
+    }, 9000)})
+
+    const handleClose = () => {
+        setOpen(false);
+    }
 
     return (
         <React.Fragment>
-        <form autoComplete="off" onSubmit={handleSubmit}>
-            <h2>Add new book</h2>
+        <div><NavBar title={ "Add new book" } button = 'LOGOUT'/></div>
+        <form autoComplete="off" onSubmit={handleSubmit} id="myLogF">
                 <TextField 
                     label="Title"
                     onChange={e => setTitle(e.target.value)}
@@ -119,11 +138,20 @@ function AddBook() {
                 />
                 <ButtonGroup variant="contained" aria-label="outlined primary button group">
                     <Button startIcon={<ArrowUpwardIcon/>} type="submit">ADD</Button>
-                    <Button color="error" startIcon={<CancelIcon/>} onClick={() => navigate("/authors")}>CANCEL</Button>
+                    <Button color="error" startIcon={<CancelIcon/>} onClick={() => navigate("/bookmanager/authors/"+params.authorId+"/books")}>CANCEL</Button>
                 </ButtonGroup>
              
         </form>
         <div>{alert ? <Alert severity="success">{alertContent}</Alert>:<></>}</div>
+        <Box sx={{ width: 500 }}>
+            <Snackbar
+                open={open}
+                onClose={handleClose}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+                autoHideDuration={6000}
+                message={snackMessage}
+            />
+        </Box>
         </React.Fragment>
     );
   }

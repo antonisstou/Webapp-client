@@ -1,28 +1,34 @@
-import React, {useState} from "react";
+import React, {useState, useEffect} from "react";
 import { TextField, Button } from "@mui/material";
-import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
+import EditIcon from '@mui/icons-material/Edit';
 import CancelIcon from '@mui/icons-material/Cancel';
 import ButtonGroup from '@mui/material/ButtonGroup';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axiosConf';
 import {useParams} from 'react-router-dom';
+import NavBar from './NavBar';
+import '../App.css';
+import Box from '@mui/material/Box';
+import Snackbar from '@mui/material/Snackbar';
 
 
 function EditBook() {
 
     let params = useParams();
 
-    // const [book, setBook] = useState([]);
-
     const [title, setTitle] = useState(params.title);
     const [isbn, setIsbn] = useState(params.isbn);
     const [publisher, setPublisher] = useState(params.publisher);
     const [publishedYear, setPublisherYear] = useState(params.publishedYear);
     
+    const [open, setOpen] = useState(false);
+    const [snackMessage, setSnackMessage] = useState("");
+
     const [titleError, setTitleError] = useState(false);
     const [isbnError, setIsbnError] = useState(false);
     const [publisherError, setPublisherError] = useState(false);
     const [publishedYearError, setPublishedYearError] = useState(false);
+    
 
  
     const handleSubmit = (event) => {
@@ -49,23 +55,35 @@ function EditBook() {
         if (title && isbn && publisher && publishedYear) {
             
             try{
-                api.put("/book/update/" + params.id,{isbn:isbn, title:title, publisher:publisher, publishedYear:publishedYear, author:{id:params.authorId}} );
+                api.put("/bookmanager/book/update/" + params.id,{isbn:isbn, title:title, publisher:publisher, publishedYear:publishedYear, author:{id:params.authorId}}, 
+                { headers: {Authorization : 'Bearer ' + JSON.parse(localStorage.getItem('user')).token}});
 
             }
             catch(err)
             {
                 console.error(err);
+                setSnackMessage(err.message)
+                setOpen(true);
             }
-            navigate("/authors/" + params.authorId +"/books")
+            navigate("/bookmanager/authors/" + params.authorId +"/books")
         }
     }
 
     const navigate = useNavigate();
+    useEffect(() => {
+        if (localStorage.getItem('user') == null){
+            navigate("/bookmanager/auth/authenticate")
+        }
+    },[navigate])
+
+    const handleClose = () => {
+        setOpen(false);
+    }
 
     return (
         <React.Fragment>
-        <form autoComplete="off" onSubmit={handleSubmit}>
-            <h2>Edit book</h2>
+        <div><NavBar title={ "Edit book" } button = 'LOGOUT'/></div>
+        <form autoComplete="off" onSubmit={handleSubmit} id="myLogF">
                 <TextField 
                     label="Title"
                     onChange={e => setTitle(e.target.value)}
@@ -107,10 +125,19 @@ function EditBook() {
                     sx={{mb: 3}}
                 />
                 <ButtonGroup variant="contained" aria-label="outlined primary button group">
-                    <Button startIcon={<ArrowUpwardIcon/>} type="submit">ADD</Button>
-                    <Button color="error" startIcon={<CancelIcon/>} onClick={() => navigate("/authors")}>CANCEL</Button>
+                    <Button startIcon={<EditIcon/>} type="submit">EDIT</Button>
+                    <Button color="error" startIcon={<CancelIcon/>} onClick={() => navigate("/bookmanager/authors/"+params.authorId+"/books")}>CANCEL</Button>
                 </ButtonGroup>
         </form>
+        <Box sx={{ width: 500 }}>
+            <Snackbar
+                open={open}
+                onClose={handleClose}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+                autoHideDuration={6000}
+                message={snackMessage}
+            />
+        </Box>
         </React.Fragment>
     );
   }

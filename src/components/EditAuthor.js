@@ -1,11 +1,16 @@
-import React, {useState} from "react";
+import React, {useState, useEffect} from "react";
 import { TextField, Button } from "@mui/material";
-import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
+import EditIcon from '@mui/icons-material/Edit';
 import CancelIcon from '@mui/icons-material/Cancel';
 import ButtonGroup from '@mui/material/ButtonGroup';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axiosConf';
 import {useParams} from 'react-router-dom';
+import NavBar from './NavBar';
+import '../App.css'
+import Box from '@mui/material/Box';
+import Snackbar from '@mui/material/Snackbar';
+
 
 function EditAuthor() {
 
@@ -15,9 +20,16 @@ function EditAuthor() {
     const [lastName, setLastName] = useState(params.lastName)
     const [firstNameError, setFirstNameError] = useState(false)
     const [lastNameError, setLastNameError] = useState(false)
+    const [open, setOpen] = useState(false);
+    const [snackMessage, setSnackMessage] = useState("");
     
  
     const navigate = useNavigate();
+    useEffect(() => {
+        if (localStorage.getItem('user') == null){
+            navigate("/bookmanager/auth/authenticate")
+        }
+    },[navigate])
 
     const handleSubmit = (event) => {
         event.preventDefault()
@@ -35,23 +47,28 @@ function EditAuthor() {
         if (firstName && lastName) {
             
             try{
-                api.put("/author/update/"+params.id,{firstName:firstName, lastName:lastName});
+                api.put("/bookmanager/author/update/"+params.id,{firstName:firstName, lastName:lastName},{ headers: {Authorization : 'Bearer ' + JSON.parse(localStorage.getItem('user')).token}});
 
             }
             catch(err)
             {
                 console.error(err);
+                setSnackMessage(err.message)
+                setOpen(true);
             }
 
-            navigate("/authors")
+            navigate("/bookmanager/authors")
         }
     }
 
+    const handleClose = () => {
+        setOpen(false);
+    }
     
     return (
         <React.Fragment>
-        <form autoComplete="off" onSubmit={handleSubmit}>
-            <h2>Edit </h2>
+        <div><NavBar title={'Edit author'} button = 'LOGOUT'/></div>
+        <form autoComplete="off" onSubmit={handleSubmit} id="myLogF">
                 <TextField 
                     label="FirstName"
                     onChange={e => setFirstName(e.target.value)}
@@ -73,11 +90,19 @@ function EditAuthor() {
                     sx={{mb: 3}}
                 />
                 <ButtonGroup variant="contained" aria-label="outlined primary button group">
-                    <Button startIcon={<ArrowUpwardIcon/>} type="submit">SUBMIT</Button>
-                    <Button color="error" startIcon={<CancelIcon/>} onClick={() => navigate("/authors")}>CANCEL</Button>
+                    <Button startIcon={<EditIcon/>} type="submit">EDIT</Button>
+                    <Button color="error" startIcon={<CancelIcon/>} onClick={() => navigate("/bookmanager/authors")}>CANCEL</Button>
                 </ButtonGroup>
-             
         </form>
+        <Box sx={{ width: 500 }}>
+            <Snackbar
+                open={open}
+                onClose={handleClose}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+                autoHideDuration={6000}
+                message={snackMessage}
+            />
+        </Box>
         </React.Fragment>
     );
 }

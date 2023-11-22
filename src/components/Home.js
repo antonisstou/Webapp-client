@@ -18,7 +18,9 @@ import BookIcon from '@mui/icons-material/Book';
 import AddIcon from '@mui/icons-material/Add';
 import { grey } from '@mui/material/colors';
 import { useNavigate } from 'react-router-dom';
-
+import NavBar from './NavBar';
+import Box from '@mui/material/Box';
+import Snackbar from '@mui/material/Snackbar';
 
 
 const StyledTableCell = styled(TableCell)(({ theme }) => ({
@@ -35,52 +37,62 @@ const StyledTableCell = styled(TableCell)(({ theme }) => ({
 
 function Home() {
 
+
     const [authors, setAuthors] = useState([]);
+    const [open, setOpen] = useState(false);
+    const [snackMessage, setSnackMessage] = useState("");
 
     const getAuthors = async () =>{
-    
+
         try{
-            const response = await api.get("/authors");
-            console.log(response.data)
+            const response = await api.get("/bookmanager/authors",{ headers: {Authorization : 'Bearer ' + JSON.parse(localStorage.getItem('user')).token}});
             setAuthors(response.data);
 
         } 
         catch(err){
             console.log(err);
+            setSnackMessage(err.message)
+            setOpen(true);
         }
     }
-  
-    useEffect(() => {
-        getAuthors();
-    },[])
-
     const navigate = useNavigate();
+    useEffect(() => {
+        if (localStorage.getItem('user') == null){
+            navigate("/bookmanager/auth/authenticate")
+        }
+        getAuthors();
+    },[navigate])
 
     
     function goToBooks(id) {
-        // console.log(id);
-        navigate("/authors/"+ id+ "/books");
+        navigate("/bookmanager/authors/"+ id+ "/books");
     }
 
     function goToEdit(id, firstName, lastName){
-        navigate("/author/update/"+id + "/" + firstName + "/" + lastName);
+        navigate("/bookmanager/author/update/"+id + "/" + firstName + "/" + lastName);
     }
 
     function deleteAuthor(id){
     
         try{
-            api.delete("/author/delete/"+id);
+            api.delete("/bookmanager/author/delete/"+id ,{ headers: {Authorization : 'Bearer ' + JSON.parse(localStorage.getItem('user')).token}});
         } 
         catch(err){
             console.log(err);
+            setSnackMessage(err.message)
+            setOpen(true);
         }
         let updatedAuthors = [...authors].filter(i => i.id !== id);
         setAuthors(updatedAuthors);
     }
 
+    const handleClose = () => {
+        setOpen(false);
+    }
+
   return (
-    <div>
-        <h1 id = "id1">Page for book managment by author</h1>
+    <React.Fragment>
+        <div><NavBar title={'Page for book managment by author'} button = 'LOGOUT'/></div>
         <TableContainer component={Paper}>
             <Table sx={{ minWidth: 650 }} aria-label="simple table">
                 <TableHead>
@@ -112,9 +124,19 @@ function Home() {
             </Table>
         </TableContainer>
         <div id = "btnDiv">
-            <Button variant="contained" startIcon={<AddIcon/>} onClick={() => navigate("/author/create")}>ADD AUTHOR</Button>
+            <Button variant="contained" startIcon={<AddIcon/>} onClick={() => navigate("/bookmanager/author/create")}>ADD AUTHOR</Button>
         </div>
-    </div>
+        <Box sx={{ width: 500 }}>
+            <Snackbar
+                
+                open={open}
+                onClose={handleClose}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+                autoHideDuration={6000}
+                message={snackMessage}
+            />
+        </Box>
+    </React.Fragment>
   );
 }
 

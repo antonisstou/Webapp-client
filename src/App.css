@@ -5,3 +5,17 @@
   margin: 100px;
   text-align: center;
 }
+#welDiv{
+  margin: 50px;
+}
+#bgDiv{
+  background: url("myBackground.jpg");
+  height: 100vh;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+#myLogF{
+  margin: 50px;
+}

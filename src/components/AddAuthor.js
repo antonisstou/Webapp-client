@@ -6,6 +6,10 @@ import ButtonGroup from '@mui/material/ButtonGroup';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axiosConf';
 import Alert from '@mui/material/Alert';
+import NavBar from './NavBar';
+import '../App.css';
+import Box from '@mui/material/Box';
+import Snackbar from '@mui/material/Snackbar';
 
 
 function AddAuthor() {
@@ -16,6 +20,9 @@ function AddAuthor() {
     const [lastNameError, setLastNameError] = useState(false);
     const [alert, setAlert] = useState(false);
     const [alertContent, setAlertContent] = useState('');
+
+    const [open, setOpen] = useState(false);
+    const [snackMessage, setSnackMessage] = useState("");
  
     const handleSubmit = (event) => {
         event.preventDefault()
@@ -31,15 +38,16 @@ function AddAuthor() {
         }
  
         if (firstName && lastName) {
-            // console.log(firstName, lastName)
             
             try{
-                api.post("/author/create",{firstName:firstName, lastName:lastName});
+                api.post("/bookmanager/author/create",{firstName:firstName, lastName:lastName},{ headers: {Authorization : 'Bearer ' + JSON.parse(localStorage.getItem('user')).token}});
 
             }
             catch(err)
             {
                 console.error(err);
+                setSnackMessage(err.message)
+                setOpen(true);
             }
             setFirstName("");
             setLastName("");
@@ -51,14 +59,24 @@ function AddAuthor() {
     const navigate = useNavigate();
 
     useEffect(() => {
+        if (localStorage.getItem('user') == null){
+            navigate("/bookmanager/auth/authenticate")
+        }
+    },[navigate])
+
+    useEffect(() => {
             setTimeout(() => {
             setAlert(false)
-    }, 6000)})
+    }, 9000)})
+
+    const handleClose = () => {
+        setOpen(false);
+    }
 
     return (
         <React.Fragment>
-        <form autoComplete="off" onSubmit={handleSubmit}>
-            <h2>Add new author</h2>
+        <div><NavBar title = {"Add new author"} button = 'LOGOUT'/></div>
+        <form autoComplete="off" onSubmit={handleSubmit} id="myLogF">
                 <TextField 
                     label="FirstName"
                     onChange={e => setFirstName(e.target.value)}
@@ -81,11 +99,20 @@ function AddAuthor() {
                 />
                 <ButtonGroup variant="contained" aria-label="outlined primary button group">
                     <Button startIcon={<ArrowUpwardIcon/>} type="submit">ADD</Button>
-                    <Button color="error" startIcon={<CancelIcon/>} onClick={() => navigate("/authors")}>CANCEL</Button>
+                    <Button color="error" startIcon={<CancelIcon/>} onClick={() => navigate("/bookmanager/authors")}>CANCEL</Button>
                 </ButtonGroup>
              
         </form>
         <div>{alert ? <Alert severity="success">{alertContent}</Alert>:<></>}</div>
+        <Box sx={{ width: 500 }}>
+            <Snackbar
+                open={open}
+                onClose={handleClose}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+                autoHideDuration={6000}
+                message={snackMessage}
+            />
+        </Box>
         </React.Fragment>
     );
   }
